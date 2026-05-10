@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    @apply h-full;
+    margin: 0;
+  }
+  body {
+    @apply bg-canvas-bg text-slate-100 font-sans antialiased;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-canvas-panel border border-canvas-border rounded-lg;
+  }
+  .btn {
+    @apply inline-flex items-center px-3 py-1.5 text-sm rounded-md border border-canvas-border bg-canvas-panel hover:bg-slate-700 transition-colors;
+  }
+  .btn-primary {
+    @apply bg-indigo-600 border-indigo-500 hover:bg-indigo-500 text-white;
+  }
+  .chip {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full;
+  }
+  .kbd {
+    @apply inline-block px-1.5 py-0.5 text-xs rounded border border-canvas-border bg-canvas-bg text-slate-200 font-mono;
+  }
+}
+
+/* React Flow overrides for dark theme */
+.react-flow__renderer { background: theme('colors.canvas.bg'); }
+.react-flow__edge-path { stroke-width: 2; }
+.react-flow__handle { opacity: 0; }
+.react-flow__controls { background: theme('colors.canvas.panel'); border: 1px solid theme('colors.canvas.border'); }
+.react-flow__controls button { background: theme('colors.canvas.panel'); color: white; border-bottom: 1px solid theme('colors.canvas.border'); }
+.react-flow__controls button:hover { background: theme('colors.slate.700'); }
+.react-flow__attribution { background: rgba(0,0,0,0.4); color: theme('colors.slate.400'); }
