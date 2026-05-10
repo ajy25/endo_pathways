@@ -17,6 +17,9 @@ import { buildBlockedEdgeSet } from '@/sim/propagate';
 const nodeTypes = { hormone: HormoneNode };
 const edgeTypes = { pathway: PathwayEdge };
 
+const LAYOUT_SCALE_X = 1.45;
+const LAYOUT_SCALE_Y = 1.35;
+
 export function PathwayCanvas() {
   const axisId = usePathwayStore((s) => s.axisId);
   const result = usePathwayStore((s) => s.result);
@@ -33,7 +36,7 @@ export function PathwayCanvas() {
     const rfNodes: Node<HormoneNodeData>[] = pathway.nodes.map((n) => ({
       id: n.id,
       type: 'hormone',
-      position: n.position,
+      position: { x: n.position.x * LAYOUT_SCALE_X, y: n.position.y * LAYOUT_SCALE_Y },
       data: {
         label: n.label,
         kind: n.kind,

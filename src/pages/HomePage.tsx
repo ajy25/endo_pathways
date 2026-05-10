@@ -38,21 +38,23 @@ export function HomePage() {
           );
         })}
       </div>
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl text-sm text-slate-300 leading-relaxed">
-        <div className="panel p-3">
-          <div className="text-slate-200 font-semibold mb-1">How to use</div>
-          Each axis is a network of hormones, glands, and target effects. Levels are
-          qualitative (direction-of-change only). Click a node and clamp it ↑ / ↓ to see
-          how the whole system responds. The lab panel summarizes the labs you'd see on a
-          test question.
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-300 leading-relaxed">
+        <div className="panel p-4">
+          <div className="text-slate-200 font-semibold mb-2">How to use</div>
+          <p className="text-slate-400">
+            Each axis is a network of hormones, glands, and target effects. Levels are
+            qualitative (direction-of-change only). Click a node and clamp it ↑ / ↓ to see
+            how the whole system responds. The lab panel summarizes the labs you'd see on a
+            test question.
+          </p>
         </div>
-        <div className="panel p-3">
-          <div className="text-slate-200 font-semibold mb-1">Keyboard shortcuts</div>
-          <ul className="space-y-0.5 text-slate-400">
-            <li><kbd className="kbd">1</kbd>–<kbd className="kbd">9</kbd>  jump to an axis</li>
-            <li><kbd className="kbd">H</kbd>  back to home</li>
-            <li><kbd className="kbd">R</kbd>  reset all perturbations</li>
-            <li><kbd className="kbd">Esc</kbd>  deselect node</li>
+        <div className="panel p-4">
+          <div className="text-slate-200 font-semibold mb-2">Keyboard shortcuts</div>
+          <ul className="space-y-1 text-slate-400">
+            <li><kbd className="kbd">1</kbd>–<kbd className="kbd">9</kbd> <span className="ml-1">jump to an axis</span></li>
+            <li><kbd className="kbd">H</kbd> <span className="ml-1">back to home</span></li>
+            <li><kbd className="kbd">R</kbd> <span className="ml-1">reset all perturbations</span></li>
+            <li><kbd className="kbd">Esc</kbd> <span className="ml-1">deselect node</span></li>
           </ul>
         </div>
       </div>
