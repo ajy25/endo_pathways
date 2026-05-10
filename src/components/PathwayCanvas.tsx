@@ -27,13 +27,27 @@ export function PathwayCanvas() {
   const activeDrugs = usePathwayStore((s) => s.activeDrugs);
   const selectedNodeId = usePathwayStore((s) => s.selectedNodeId);
   const selectNode = usePathwayStore((s) => s.selectNode);
+  const overviewHiddenAxes = usePathwayStore((s) => s.overviewHiddenAxes);
 
   const pathway = axisId ? getPathway(axisId) : null;
 
   const { nodes, edges } = useMemo(() => {
     if (!pathway) return { nodes: [] as Node[], edges: [] as Edge[] };
     const blocked = buildBlockedEdgeSet(pathway.edges, activeDrugs);
-    const rfNodes: Node<HormoneNodeData>[] = pathway.nodes.map((n) => ({
+    // In overview mode, drop tiles for axes the user has toggled off. Node ids
+    // are prefixed `${axis}:` in the overview pathway, so a prefix check is enough.
+    const isOverview = pathway.id === 'overview';
+    const visibleNodes = isOverview && overviewHiddenAxes.size > 0
+      ? pathway.nodes.filter((n) => {
+          const axis = n.id.split(':', 1)[0];
+          return !overviewHiddenAxes.has(axis);
+        })
+      : pathway.nodes;
+    const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
+    const visibleEdges = isOverview && overviewHiddenAxes.size > 0
+      ? pathway.edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
+      : pathway.edges;
+    const rfNodes: Node<HormoneNodeData>[] = visibleNodes.map((n) => ({
       id: n.id,
       type: 'hormone',
       position: { x: n.position.x * LAYOUT_SCALE_X, y: n.position.y * LAYOUT_SCALE_Y },
@@ -75,14 +89,14 @@ export function PathwayCanvas() {
     // Group edges that share an endpoint and routing direction so we can fan them out.
     const siblingIndex = new Map<string, number>();
     const siblingCount = new Map<string, number>();
-    const edgeKeys = pathway.edges.map((e) => {
+    const edgeKeys = visibleEdges.map((e) => {
       const { sourceHandle, targetHandle } = handleFor(e.source, e.target, e.effect);
       const key = `${e.source}:${sourceHandle}->${e.target}:${targetHandle}`;
       siblingCount.set(key, (siblingCount.get(key) ?? 0) + 1);
       siblingIndex.set(e.id, (siblingCount.get(key) ?? 1) - 1);
       return { key, sourceHandle, targetHandle };
     });
-    const rfEdges: Edge<PathwayEdgeData>[] = pathway.edges.map((e, i) => {
+    const rfEdges: Edge<PathwayEdgeData>[] = visibleEdges.map((e, i) => {
       const sourceLevel = result?.values[e.source] ?? 0;
       const active = Math.abs(sourceLevel) > 0.4;
       const { key, sourceHandle, targetHandle } = edgeKeys[i];
@@ -107,7 +121,12 @@ export function PathwayCanvas() {
       };
     });
     return { nodes: rfNodes, edges: rfEdges };
-  }, [pathway, result, clamps, activeDrugs, selectedNodeId]);
+  }, [pathway, result, clamps, activeDrugs, selectedNodeId, overviewHiddenAxes]);
+
+  // Force a refit when the overview filter changes so the visible tiles fill the canvas.
+  const fitKey = pathway?.id === 'overview'
+    ? `overview:${[...overviewHiddenAxes].sort().join(',')}`
+    : (pathway?.id ?? 'none');
 
   const onNodeClick: NodeMouseHandler = (_, node) => {
     selectNode(node.id);
@@ -125,6 +144,7 @@ export function PathwayCanvas() {
     <div className="h-full w-full relative">
       <EdgeArrowMarkers />
       <ReactFlow
+        key={fitKey}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}

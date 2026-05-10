@@ -34,12 +34,13 @@ export function AxisPage() {
 
   return (
     <div className="grid grid-cols-[1fr_320px] gap-3 p-3 h-[calc(100vh-60px)]">
-      <div className="panel overflow-hidden">
-        <div className="px-4 py-2 border-b border-canvas-border">
+      <div className="panel overflow-hidden flex flex-col">
+        <div className="px-4 py-2 border-b border-canvas-border shrink-0">
           <h2 className="text-base font-semibold text-white">{pathway.name}</h2>
           <p className="text-xs text-slate-400 leading-snug mt-0.5">{pathway.blurb}</p>
+          {axisId === 'overview' && <OverviewAxisToggles />}
         </div>
-        <div className="h-[calc(100%-58px)]">
+        <div className="grow min-h-0">
           <PathwayCanvas />
         </div>
       </div>
@@ -67,6 +68,60 @@ function ScenarioCard() {
         <summary className="cursor-pointer text-indigo-300 hover:text-indigo-200">Teaching point</summary>
         <p className="text-sm text-slate-200 mt-1 leading-snug">{sc.teachingPoint}</p>
       </details>
+    </div>
+  );
+}
+
+const OVERVIEW_AXES: { id: string; label: string }[] = [
+  { id: 'hpt', label: 'HPT' },
+  { id: 'hpa', label: 'HPA' },
+  { id: 'hpg', label: 'HPG' },
+  { id: 'gh', label: 'GH' },
+  { id: 'prl', label: 'PRL' },
+  { id: 'adh', label: 'ADH' },
+  { id: 'raas', label: 'RAAS' },
+  { id: 'ca', label: 'Ca' },
+  { id: 'glucose', label: 'Glucose' },
+  { id: 'steroidogenesis', label: 'Steroid' },
+  { id: 'appetite', label: 'Appetite' },
+];
+
+function OverviewAxisToggles() {
+  const hidden = usePathwayStore((s) => s.overviewHiddenAxes);
+  const toggle = usePathwayStore((s) => s.toggleOverviewAxis);
+  const setVisibility = usePathwayStore((s) => s.setOverviewVisibility);
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1">
+      <span className="text-[10px] uppercase tracking-wider text-slate-500 mr-1">Tiles</span>
+      {OVERVIEW_AXES.map((a) => {
+        const on = !hidden.has(a.id);
+        return (
+          <button
+            key={a.id}
+            onClick={() => toggle(a.id)}
+            className={[
+              'chip cursor-pointer transition-colors border',
+              on
+                ? 'bg-indigo-500/30 text-indigo-100 border-indigo-500/50'
+                : 'bg-canvas-bg text-slate-500 border-canvas-border hover:text-slate-300',
+            ].join(' ')}
+          >
+            {a.label}
+          </button>
+        );
+      })}
+      <button
+        onClick={() => setVisibility('all')}
+        className="ml-2 text-[11px] text-slate-400 hover:text-slate-200 underline-offset-2 hover:underline"
+      >
+        all
+      </button>
+      <button
+        onClick={() => setVisibility('none')}
+        className="text-[11px] text-slate-400 hover:text-slate-200 underline-offset-2 hover:underline"
+      >
+        none
+      </button>
     </div>
   );
 }

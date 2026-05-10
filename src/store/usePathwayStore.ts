@@ -12,6 +12,8 @@ interface PathwayState {
   activeScenario: ScenarioId | null;
   selectedNodeId: NodeId | null;
   result: SimulationResult | null;
+  /** Axis tiles hidden in the overview view (other views ignore this). */
+  overviewHiddenAxes: Set<string>;
   setAxis: (id: AxisId) => void;
   clearAxis: () => void;
   setClamp: (nodeId: NodeId, value: number | null) => void;
@@ -20,8 +22,14 @@ interface PathwayState {
   applyScenario: (id: ScenarioId) => void;
   clearScenario: () => void;
   selectNode: (id: NodeId | null) => void;
+  toggleOverviewAxis: (axis: string) => void;
+  setOverviewVisibility: (mode: 'all' | 'none') => void;
   recompute: () => void;
 }
+
+const ALL_OVERVIEW_AXES = [
+  'hpt', 'hpa', 'hpg', 'gh', 'prl', 'adh', 'raas', 'ca', 'glucose', 'steroidogenesis', 'appetite',
+];
 
 export const usePathwayStore = create<PathwayState>((set, get) => ({
   axisId: null,
@@ -30,6 +38,7 @@ export const usePathwayStore = create<PathwayState>((set, get) => ({
   activeScenario: null,
   selectedNodeId: null,
   result: null,
+  overviewHiddenAxes: new Set(),
 
   setAxis: (id) => {
     set({ axisId: id, clamps: {}, activeDrugs: new Set(), activeScenario: null, selectedNodeId: null });
@@ -76,6 +85,18 @@ export const usePathwayStore = create<PathwayState>((set, get) => ({
   },
 
   selectNode: (id) => set({ selectedNodeId: id }),
+
+  toggleOverviewAxis: (axis) => {
+    const next = new Set(get().overviewHiddenAxes);
+    if (next.has(axis)) next.delete(axis);
+    else next.add(axis);
+    set({ overviewHiddenAxes: next });
+  },
+  setOverviewVisibility: (mode) => {
+    set({
+      overviewHiddenAxes: mode === 'all' ? new Set() : new Set(ALL_OVERVIEW_AXES),
+    });
+  },
 
   recompute: () => {
     const { axisId, clamps, activeDrugs } = get();

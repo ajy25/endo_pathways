@@ -20,7 +20,8 @@ const AXIS_LABELS: Record<Exclude<AxisId, 'overview'>, string> = {
 
 export function HomePage() {
   return (
-    <div className="max-w-5xl mx-auto p-8">
+    <div className="h-full overflow-y-auto">
+      <div className="max-w-5xl mx-auto p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-1">Endo Pathways</h1>
         <p className="text-slate-300 max-w-2xl">
@@ -58,6 +59,7 @@ export function HomePage() {
         <span><kbd className="kbd">H</kbd> home</span>
         <span><kbd className="kbd">R</kbd> reset</span>
         <span><kbd className="kbd">Esc</kbd> deselect</span>
+      </div>
       </div>
     </div>
   );
