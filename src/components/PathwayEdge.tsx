@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, Position, type EdgeProps } from '@xyflow/react';
 import type { EdgeEffect } from '@/model/types';
 
 export interface PathwayEdgeData extends Record<string, unknown> {
@@ -7,7 +7,11 @@ export interface PathwayEdgeData extends Record<string, unknown> {
   label?: string;
   active: boolean;
   blocked: boolean;
+  /** Symmetric lane index (..., -1, 0, 1, ...) used to fan out sibling edges. */
+  lane?: number;
 }
+
+const LANE_SPACING = 22;
 
 const STROKE: Record<EdgeEffect, string> = {
   stimulates: '#22c55e',
@@ -33,6 +37,26 @@ const MARKER: Record<EdgeEffect, string> = {
 const PathwayEdgeComponent = (props: EdgeProps) => {
   const { sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data } = props;
   const d = (data ?? {}) as PathwayEdgeData;
+  const lane = d.lane ?? 0;
+  // Feedback edges leave the top of the source and enter the top of the target —
+  // arc them higher when there are multiple, so they don't pile up at the same y.
+  const isTopArc = sourcePosition === Position.Top && targetPosition === Position.Top;
+  const isBottomArc = sourcePosition === Position.Bottom && targetPosition === Position.Bottom;
+  const isHorizontal = sourcePosition === Position.Right || sourcePosition === Position.Left;
+  let centerX: number | undefined;
+  let centerY: number | undefined;
+  if (isTopArc) {
+    // Push the elbow further above the nodes for each lane.
+    centerY = Math.min(sourceY, targetY) - 40 - Math.abs(lane) * LANE_SPACING;
+  } else if (isBottomArc) {
+    centerY = Math.max(sourceY, targetY) + 40 + Math.abs(lane) * LANE_SPACING;
+  } else if (isHorizontal) {
+    // Shift the vertical column of the elbow so siblings ride parallel tracks.
+    centerX = (sourceX + targetX) / 2 + lane * LANE_SPACING;
+  } else {
+    // Vertical run: shift the horizontal row of the elbow instead.
+    centerY = (sourceY + targetY) / 2 + lane * LANE_SPACING;
+  }
   const [path, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -41,6 +65,8 @@ const PathwayEdgeComponent = (props: EdgeProps) => {
     targetY,
     targetPosition,
     borderRadius: 12,
+    centerX,
+    centerY,
   });
   const stroke = d.blocked ? '#64748b' : STROKE[d.effect ?? 'stimulates'];
   const dash = d.blocked ? '2 2' : DASH[d.effect ?? 'stimulates'];

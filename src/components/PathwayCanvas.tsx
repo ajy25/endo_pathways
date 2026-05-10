@@ -47,19 +47,62 @@ export function PathwayCanvas() {
       },
       selected: selectedNodeId === n.id,
     }));
-    const rfEdges: Edge<PathwayEdgeData>[] = pathway.edges.map((e) => {
+    const nodeById = new Map(pathway.nodes.map((n) => [n.id, n]));
+    type HandleChoice = { sourceHandle: string; targetHandle: string };
+    const handleFor = (sourceId: string, targetId: string, effect: string): HandleChoice => {
+      const s = nodeById.get(sourceId);
+      const t = nodeById.get(targetId);
+      if (!s || !t) return { sourceHandle: 'sr', targetHandle: 'tl' };
+      const dx = t.position.x - s.position.x;
+      const dy = t.position.y - s.position.y;
+      // Feedback (negative feedback to upstream): route up and over the top.
+      if (effect === 'feedback-neg') {
+        return { sourceHandle: 'st', targetHandle: 'tt' };
+      }
+      // Edge that travels backward in x (target sits left of source) — also route over the top.
+      if (dx < -20) {
+        return { sourceHandle: 'st', targetHandle: 'tt' };
+      }
+      // Strongly vertical: enter/exit via top/bottom.
+      if (Math.abs(dy) > Math.abs(dx) * 1.3) {
+        return dy > 0
+          ? { sourceHandle: 'sb', targetHandle: 'tt' }
+          : { sourceHandle: 'st', targetHandle: 'tb' };
+      }
+      // Default: horizontal flow right→left.
+      return { sourceHandle: 'sr', targetHandle: 'tl' };
+    };
+    // Group edges that share an endpoint and routing direction so we can fan them out.
+    const siblingIndex = new Map<string, number>();
+    const siblingCount = new Map<string, number>();
+    const edgeKeys = pathway.edges.map((e) => {
+      const { sourceHandle, targetHandle } = handleFor(e.source, e.target, e.effect);
+      const key = `${e.source}:${sourceHandle}->${e.target}:${targetHandle}`;
+      siblingCount.set(key, (siblingCount.get(key) ?? 0) + 1);
+      siblingIndex.set(e.id, (siblingCount.get(key) ?? 1) - 1);
+      return { key, sourceHandle, targetHandle };
+    });
+    const rfEdges: Edge<PathwayEdgeData>[] = pathway.edges.map((e, i) => {
       const sourceLevel = result?.values[e.source] ?? 0;
       const active = Math.abs(sourceLevel) > 0.4;
+      const { key, sourceHandle, targetHandle } = edgeKeys[i];
+      const total = siblingCount.get(key) ?? 1;
+      const idx = siblingIndex.get(e.id) ?? 0;
+      // Spread siblings symmetrically around 0; first sibling gets 0 offset when alone.
+      const lane = total > 1 ? idx - (total - 1) / 2 : 0;
       return {
         id: e.id,
         source: e.source,
         target: e.target,
+        sourceHandle,
+        targetHandle,
         type: 'pathway',
         data: {
           effect: e.effect,
           label: e.label,
           active,
           blocked: blocked.has(e.id),
+          lane,
         },
       };
     });

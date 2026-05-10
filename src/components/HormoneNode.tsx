@@ -53,7 +53,9 @@ const HormoneNodeComponent = ({ data, selected }: NodeProps) => {
         d.clamped ? 'ring-2 ring-yellow-400' : '',
       ].join(' ')}
     >
-      <Handle type="target" position={Position.Left} />
+      <Handle id="tl" type="target" position={Position.Left} />
+      <Handle id="tt" type="target" position={Position.Top} />
+      <Handle id="tb" type="target" position={Position.Bottom} />
       <div className="flex items-start justify-between gap-2">
         <div className="text-sm font-semibold text-white leading-tight">{d.label}</div>
         <div className="text-lg font-bold text-white leading-none">{arrowFor(d.level)}</div>
@@ -63,7 +65,9 @@ const HormoneNodeComponent = ({ data, selected }: NodeProps) => {
         {d.isLab && <span className="chip bg-violet-500/20 text-violet-200">lab</span>}
         {d.clamped && <span className="chip bg-yellow-500/30 text-yellow-100">clamped</span>}
       </div>
-      <Handle type="source" position={Position.Right} />
+      <Handle id="sr" type="source" position={Position.Right} />
+      <Handle id="st" type="source" position={Position.Top} />
+      <Handle id="sb" type="source" position={Position.Bottom} />
     </div>
   );
 };
