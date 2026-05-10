@@ -3,6 +3,7 @@ import { useParams, Navigate } from 'react-router-dom';
 import { PathwayCanvas } from '@/components/PathwayCanvas';
 import { LabPanel } from '@/components/LabPanel';
 import { NodeDetailPanel } from '@/components/NodeDetailPanel';
+import { NodeSearch } from '@/components/NodeSearch';
 import { usePathwayStore } from '@/store/usePathwayStore';
 import { getPathway } from '@/pathways';
 import type { AxisId } from '@/model/types';
@@ -36,8 +37,13 @@ export function AxisPage() {
     <div className="grid grid-cols-[1fr_320px] gap-3 p-3 h-[calc(100vh-60px)]">
       <div className="panel overflow-hidden flex flex-col">
         <div className="px-4 py-2 border-b border-canvas-border shrink-0">
-          <h2 className="text-base font-semibold text-white">{pathway.name}</h2>
-          <p className="text-xs text-slate-400 leading-snug mt-0.5">{pathway.blurb}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-white">{pathway.name}</h2>
+              <p className="text-xs text-slate-400 leading-snug mt-0.5">{pathway.blurb}</p>
+            </div>
+            <ChangedOnlyToggle />
+          </div>
           {axisId === 'overview' && <OverviewAxisToggles />}
         </div>
         <div className="grow min-h-0">
@@ -45,6 +51,7 @@ export function AxisPage() {
         </div>
       </div>
       <div className="flex flex-col gap-3 overflow-y-auto">
+        <NodeSearch />
         <LabPanel />
         <NodeDetailPanel />
         {scenarioObj && <ScenarioCard />}
@@ -69,6 +76,25 @@ function ScenarioCard() {
         <p className="text-sm text-slate-200 mt-1 leading-snug">{sc.teachingPoint}</p>
       </details>
     </div>
+  );
+}
+
+function ChangedOnlyToggle() {
+  const on = usePathwayStore((s) => s.showOnlyChanged);
+  const toggle = usePathwayStore((s) => s.toggleShowOnlyChanged);
+  return (
+    <button
+      onClick={toggle}
+      title="Hide nodes whose value matches the resting baseline"
+      className={[
+        'chip cursor-pointer transition-colors border shrink-0 whitespace-nowrap',
+        on
+          ? 'bg-amber-500/30 text-amber-100 border-amber-500/50'
+          : 'bg-canvas-bg text-slate-400 border-canvas-border hover:text-slate-200',
+      ].join(' ')}
+    >
+      {on ? '● Only changes' : 'Only changes'}
+    </button>
   );
 }
 

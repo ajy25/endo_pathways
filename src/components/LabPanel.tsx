@@ -16,6 +16,8 @@ export function LabPanel() {
   const clamps = usePathwayStore((s) => s.clamps);
   const drugs = usePathwayStore((s) => s.activeDrugs);
   const scenario = usePathwayStore((s) => s.activeScenario);
+  const selectedNodeId = usePathwayStore((s) => s.selectedNodeId);
+  const focusNode = usePathwayStore((s) => s.focusNode);
 
   const pathway = axisId ? getPathway(axisId) : null;
   if (!pathway || !result) return null;
@@ -24,19 +26,31 @@ export function LabPanel() {
   return (
     <div className="panel p-3">
       <div className="text-xs uppercase tracking-wider text-slate-400 mb-2">Lab panel</div>
-      <ul className="space-y-1.5">
+      <ul className="space-y-0.5">
         {labs.map((node) => {
           const v = result.values[node.id] ?? 0;
           const b = bucketLevel(v);
           const arrow = arrowOf(v);
           const isClamped = node.id in clamps;
+          const isSelected = selectedNodeId === node.id;
           return (
-            <li key={node.id} className="flex items-baseline justify-between text-sm">
-              <span className="text-slate-200">{node.label}</span>
-              <span className={['font-mono font-bold', ARROW_COLOR[b]].join(' ')}>
-                {arrow}
-                {isClamped && <span className="ml-1 text-yellow-400 text-xs">●</span>}
-              </span>
+            <li key={node.id}>
+              <button
+                type="button"
+                onClick={() => focusNode(node.id)}
+                className={[
+                  'w-full flex items-baseline justify-between text-sm rounded px-1.5 py-1 text-left transition-colors',
+                  isSelected
+                    ? 'bg-indigo-500/20 ring-1 ring-indigo-500/40'
+                    : 'hover:bg-slate-700/40',
+                ].join(' ')}
+              >
+                <span className="text-slate-200">{node.label}</span>
+                <span className={['font-mono font-bold', ARROW_COLOR[b]].join(' ')}>
+                  {arrow}
+                  {isClamped && <span className="ml-1 text-yellow-400 text-xs">●</span>}
+                </span>
+              </button>
             </li>
           );
         })}

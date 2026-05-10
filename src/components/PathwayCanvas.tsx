@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   Background,
   Controls,
   ReactFlow,
+  useReactFlow,
   type Edge,
   type Node,
   type NodeMouseHandler,
@@ -19,30 +20,47 @@ const edgeTypes = { pathway: PathwayEdge };
 
 const LAYOUT_SCALE_X = 1.45;
 const LAYOUT_SCALE_Y = 1.35;
+// A node counts as "changed" when its current value differs from its
+// baseline (defaultClamps-only) value by more than this amount. Tuned to
+// roughly match where `bucketLevel` starts calling things non-normal.
+const CHANGED_EPSILON = 0.3;
 
 export function PathwayCanvas() {
   const axisId = usePathwayStore((s) => s.axisId);
   const result = usePathwayStore((s) => s.result);
+  const baselineResult = usePathwayStore((s) => s.baselineResult);
   const clamps = usePathwayStore((s) => s.clamps);
   const activeDrugs = usePathwayStore((s) => s.activeDrugs);
   const selectedNodeId = usePathwayStore((s) => s.selectedNodeId);
   const selectNode = usePathwayStore((s) => s.selectNode);
   const overviewHiddenAxes = usePathwayStore((s) => s.overviewHiddenAxes);
+  const showOnlyChanged = usePathwayStore((s) => s.showOnlyChanged);
 
   const pathway = axisId ? getPathway(axisId) : null;
 
-  const { nodes, edges } = useMemo(() => {
-    if (!pathway) return { nodes: [] as Node[], edges: [] as Edge[] };
+  const { nodes, edges, totalNodeCount, changedFilterActive } = useMemo(() => {
+    if (!pathway) {
+      return { nodes: [] as Node[], edges: [] as Edge[], totalNodeCount: 0, changedFilterActive: false };
+    }
     const blocked = buildBlockedEdgeSet(pathway.edges, activeDrugs);
     // In overview mode, drop tiles for axes the user has toggled off. Node ids
     // are prefixed `${axis}:` in the overview pathway, so a prefix check is enough.
     const isOverview = pathway.id === 'overview';
-    const visibleNodes = isOverview && overviewHiddenAxes.size > 0
+    let visibleNodes = isOverview && overviewHiddenAxes.size > 0
       ? pathway.nodes.filter((n) => {
           const axis = n.id.split(':', 1)[0];
           return !overviewHiddenAxes.has(axis);
         })
       : pathway.nodes;
+    const totalAfterAxisFilter = visibleNodes.length;
+    const filterChanged = showOnlyChanged && !!result && !!baselineResult;
+    if (filterChanged) {
+      visibleNodes = visibleNodes.filter((n) => {
+        const cur = result!.values[n.id] ?? 0;
+        const base = baselineResult!.values[n.id] ?? 0;
+        return Math.abs(cur - base) > CHANGED_EPSILON;
+      });
+    }
     const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
     const visibleEdges = isOverview && overviewHiddenAxes.size > 0
       ? pathway.edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
@@ -120,13 +138,21 @@ export function PathwayCanvas() {
         },
       };
     });
-    return { nodes: rfNodes, edges: rfEdges };
-  }, [pathway, result, clamps, activeDrugs, selectedNodeId, overviewHiddenAxes]);
+    return {
+      nodes: rfNodes,
+      edges: rfEdges,
+      totalNodeCount: totalAfterAxisFilter,
+      changedFilterActive: filterChanged,
+    };
+  }, [pathway, result, baselineResult, clamps, activeDrugs, selectedNodeId, overviewHiddenAxes, showOnlyChanged]);
 
-  // Force a refit when the overview filter changes so the visible tiles fill the canvas.
-  const fitKey = pathway?.id === 'overview'
-    ? `overview:${[...overviewHiddenAxes].sort().join(',')}`
-    : (pathway?.id ?? 'none');
+  // Force a refit when the overview filter or "only changed" filter changes so
+  // the visible nodes fill the canvas.
+  const fitKey = [
+    pathway?.id ?? 'none',
+    pathway?.id === 'overview' ? [...overviewHiddenAxes].sort().join(',') : '',
+    showOnlyChanged ? `c${nodes.length}` : 'all',
+  ].join('|');
 
   const onNodeClick: NodeMouseHandler = (_, node) => {
     selectNode(node.id);
@@ -140,9 +166,23 @@ export function PathwayCanvas() {
     );
   }
 
+  const emptyChangedState = changedFilterActive && nodes.length === 0;
+
   return (
     <div className="h-full w-full relative">
       <EdgeArrowMarkers />
+      {changedFilterActive && totalNodeCount > 0 && (
+        <div className="absolute top-2 left-2 z-10 panel px-2 py-1 text-[11px] text-amber-200 border-amber-500/40">
+          Only changes: {nodes.length} of {totalNodeCount}
+        </div>
+      )}
+      {emptyChangedState && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="panel px-4 py-3 text-sm text-slate-300 border-amber-500/40">
+            Nothing has shifted from baseline yet — clamp a node or apply a scenario.
+          </div>
+        </div>
+      )}
       <ReactFlow
         key={fitKey}
         nodes={nodes}
@@ -160,7 +200,32 @@ export function PathwayCanvas() {
       >
         <Background color="#1e293b" gap={24} />
         <Controls position="bottom-right" showInteractive={false} />
+        <FocusOnSelected />
       </ReactFlow>
     </div>
   );
+}
+
+/**
+ * Pans the viewport to the selected node whenever focusToken bumps (e.g., a lab
+ * row click or search pick). Plain node clicks don't bump the token, so they
+ * don't yank the canvas around.
+ */
+function FocusOnSelected() {
+  const selectedNodeId = usePathwayStore((s) => s.selectedNodeId);
+  const focusToken = usePathwayStore((s) => s.focusToken);
+  const { setCenter, getNode, getZoom } = useReactFlow();
+  useEffect(() => {
+    if (!selectedNodeId || focusToken === 0) return;
+    const node = getNode(selectedNodeId);
+    if (!node) return;
+    const w = node.measured?.width ?? node.width ?? 160;
+    const h = node.measured?.height ?? node.height ?? 70;
+    const x = node.position.x + w / 2;
+    const y = node.position.y + h / 2;
+    const zoom = Math.max(getZoom(), 0.9);
+    setCenter(x, y, { duration: 500, zoom });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusToken]);
+  return null;
 }
