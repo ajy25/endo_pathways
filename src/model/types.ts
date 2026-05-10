@@ -14,7 +14,8 @@ export type AxisId =
   | 'ca'
   | 'glucose'
   | 'steroidogenesis'
-  | 'appetite';
+  | 'appetite'
+  | 'overview';
 
 export type NodeKind =
   | 'hormone'

@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 import { pathways } from '@/pathways';
 import type { AxisId, AxisPathway } from '@/model/types';
 
-const AXIS_ORDER: AxisId[] = ['hpt', 'hpa', 'hpg', 'gh', 'prl', 'adh', 'raas', 'ca', 'glucose', 'steroidogenesis', 'appetite'];
+const AXIS_ORDER: Exclude<AxisId, 'overview'>[] = ['hpt', 'hpa', 'hpg', 'gh', 'prl', 'adh', 'raas', 'ca', 'glucose', 'steroidogenesis', 'appetite'];
 
-const AXIS_LABELS: Record<AxisId, string> = {
+const AXIS_LABELS: Record<Exclude<AxisId, 'overview'>, string> = {
   hpt: 'Hypothalamic–Pituitary–Thyroid',
   hpa: 'Hypothalamic–Pituitary–Adrenal',
   hpg: 'Hypothalamic–Pituitary–Gonadal',
@@ -29,6 +29,20 @@ export function HomePage() {
           Try a disease scenario to see classic patterns (Graves, Hashimoto, Cushing, Addison, etc.).
         </p>
       </div>
+      <Link
+        to="/axis/overview"
+        className="panel p-4 mb-3 block border-indigo-500/50 hover:border-indigo-400 transition-colors bg-gradient-to-r from-indigo-900/30 to-canvas-panel"
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-base font-semibold text-white">Overview — all axes</div>
+          <span className="chip bg-indigo-500/40 text-indigo-100">cross-axis links →</span>
+        </div>
+        <div className="text-xs text-slate-300 leading-snug">
+          See every axis on one canvas, with the classic cross-axis links wired up
+          (TRH→PRL, GC→deiodinase, leptin→GnRH, GH→glucose, aldo→K⁺, …). Clamping
+          propagates across axes.
+        </div>
+      </Link>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {AXIS_ORDER.map((id) => {
           const p = pathways[id] as AxisPathway | null;
@@ -38,31 +52,18 @@ export function HomePage() {
           );
         })}
       </div>
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-300 leading-relaxed">
-        <div className="panel p-4">
-          <div className="text-slate-200 font-semibold mb-2">How to use</div>
-          <p className="text-slate-400">
-            Each axis is a network of hormones, glands, and target effects. Levels are
-            qualitative (direction-of-change only). Click a node and clamp it ↑ / ↓ to see
-            how the whole system responds. The lab panel summarizes the labs you'd see on a
-            test question.
-          </p>
-        </div>
-        <div className="panel p-4">
-          <div className="text-slate-200 font-semibold mb-2">Keyboard shortcuts</div>
-          <ul className="space-y-1 text-slate-400">
-            <li><kbd className="kbd">1</kbd>–<kbd className="kbd">9</kbd> <span className="ml-1">jump to an axis</span></li>
-            <li><kbd className="kbd">H</kbd> <span className="ml-1">back to home</span></li>
-            <li><kbd className="kbd">R</kbd> <span className="ml-1">reset all perturbations</span></li>
-            <li><kbd className="kbd">Esc</kbd> <span className="ml-1">deselect node</span></li>
-          </ul>
-        </div>
+      <div className="mt-8 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+        <span>Shortcuts:</span>
+        <span><kbd className="kbd">1</kbd>–<kbd className="kbd">9</kbd> jump to axis</span>
+        <span><kbd className="kbd">H</kbd> home</span>
+        <span><kbd className="kbd">R</kbd> reset</span>
+        <span><kbd className="kbd">Esc</kbd> deselect</span>
       </div>
     </div>
   );
 }
 
-function AxisCard({ id, title, blurb, ready }: { id: AxisId; title: string; blurb?: string; ready: boolean }) {
+function AxisCard({ id, title, blurb, ready }: { id: Exclude<AxisId, 'overview'>; title: string; blurb?: string; ready: boolean }) {
   if (!ready) {
     return (
       <div className="panel p-4 opacity-50">

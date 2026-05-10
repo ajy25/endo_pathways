@@ -10,6 +10,7 @@ import { ca } from './ca';
 import { glucose } from './glucose';
 import { appetite } from './appetite';
 import { steroidogenesis } from './steroidogenesis';
+import { overview } from './overview';
 
 export const pathways: Record<AxisId, AxisPathway | null> = {
   hpt,
@@ -23,6 +24,7 @@ export const pathways: Record<AxisId, AxisPathway | null> = {
   glucose,
   appetite,
   steroidogenesis,
+  overview,
 };
 
 export const availableAxes: AxisId[] = (Object.keys(pathways) as AxisId[]).filter(
